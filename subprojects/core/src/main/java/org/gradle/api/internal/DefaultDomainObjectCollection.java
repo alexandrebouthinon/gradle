@@ -136,7 +136,7 @@ public class DefaultDomainObjectCollection<T> extends AbstractCollection<T> impl
         }
     }
 
-    private void flushPending(Class<?> type) {
+    protected void flushPending(Class<?> type) {
         if (pending != null) {
             ListIterator<ProviderInternal<? extends T>> iterator = pending.listIterator();
             while (iterator.hasNext()) {
