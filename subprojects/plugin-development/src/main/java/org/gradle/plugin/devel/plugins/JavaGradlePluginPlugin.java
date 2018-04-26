@@ -32,10 +32,10 @@ import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.internal.ConventionMapping;
 import org.gradle.api.internal.plugins.DslObject;
 import org.gradle.api.internal.plugins.PluginDescriptor;
+import org.gradle.api.internal.project.ProjectInternal;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.AppliedPlugin;
-import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -44,8 +44,7 @@ import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.testing.Test;
-import org.gradle.model.Model;
-import org.gradle.model.RuleSource;
+import org.gradle.internal.model.RuleBasedPluginListener;
 import org.gradle.plugin.devel.GradlePluginDevelopmentExtension;
 import org.gradle.plugin.devel.PluginDeclaration;
 import org.gradle.plugin.devel.tasks.GeneratePluginDescriptors;
@@ -130,6 +129,7 @@ public class JavaGradlePluginPlugin implements Plugin<Project> {
         configureDescriptorGeneration(project, extension);
         validatePluginDeclarations(project, extension);
         configureTaskPropertiesValidation(project);
+        bridgeToSoftwareModelIfNecessary((ProjectInternal) project);
     }
 
     private void applyDependencies(Project project) {
@@ -262,6 +262,15 @@ public class JavaGradlePluginPlugin implements Plugin<Project> {
         project.getTasks().getByName(JavaBasePlugin.CHECK_TASK_NAME).dependsOn(validator);
     }
 
+    private void bridgeToSoftwareModelIfNecessary(ProjectInternal project) {
+        project.addRuleBasedPluginListener(new RuleBasedPluginListener() {
+            @Override
+            public void prepareForRuleBasedPlugins(Project project) {
+                project.getPluginManager().apply(JavaGradlePluginPluginRules.class);
+            }
+        });
+    }
+
     /**
      * Implements plugin validation tasks to validate that a proper plugin jar is produced.
      */
@@ -386,13 +395,6 @@ public class JavaGradlePluginPlugin implements Plugin<Project> {
                 String runtimeConfigurationName = testSourceSet.getRuntimeConfigurationName();
                 dependencies.add(runtimeConfigurationName, project.files(pluginClasspathTask));
             }
-        }
-    }
-
-    static class Rules extends RuleSource {
-        @Model
-        public GradlePluginDevelopmentExtension gradlePluginDevelopmentExtension(ExtensionContainer extensionContainer) {
-            return extensionContainer.getByType(GradlePluginDevelopmentExtension.class);
         }
     }
 
