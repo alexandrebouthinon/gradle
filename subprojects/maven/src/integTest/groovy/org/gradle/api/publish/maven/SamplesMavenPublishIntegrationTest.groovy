@@ -205,6 +205,20 @@ class SamplesMavenPublishIntegrationTest extends AbstractIntegrationSpec {
         module.parsedPom.scm.url.text() == 'http://example.com/my-library/'
     }
 
+    @UsesSample("maven-publish/pomGeneration")
+    def pomGeneration() {
+        given:
+        sample sampleProject
+
+        when:
+        succeeds "generatePomFileForMavenCustomPublication"
+
+        then:
+        def pom = sampleProject.dir.file("build/generated-pom.xml").assertExists()
+        def parsedPom = new org.gradle.test.fixtures.maven.MavenPom(pom)
+        parsedPom.name == "Example"
+    }
+
     private void verifyPomFile(MavenFileModule module, String outputFileName) {
         def actualPomXmlText = module.pomFile.text.replaceFirst('publication="\\d+"', 'publication="«PUBLICATION-TIME-STAMP»"').trim()
         assert actualPomXmlText == getExpectedPomOutput(sampleProject.dir.file(outputFileName))
