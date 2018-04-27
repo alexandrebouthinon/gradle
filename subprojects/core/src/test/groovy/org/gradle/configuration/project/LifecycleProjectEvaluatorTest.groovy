@@ -46,6 +46,10 @@ class LifecycleProjectEvaluatorTest extends Specification {
         project.projectPath >> Path.path(":project1")
         project.path >> project.projectPath.toString()
         project.identityPath >> Path.path(":project1")
+        project.stepEvaluation(listener, _) >> { batch, action ->
+            action.execute(batch)
+            null
+        }
     }
 
     void "nothing happens if project was already configured"() {
